@@ -1,0 +1,227 @@
+library(tidyverse)
+library(readxl)
+robot_info <- read.csv("Robot_Info.csv")
+management_priority <- read_excel("Management_Priority.xlsx")
+# Assuming robot_info contains the data from 'Robot_Info.csv'
+
+# Display the structure of robot_info to check column names and indices
+str(robot_info)
+
+# Transpose the data frame so that prototypes become rows
+robot_info <- t(robot_info)
+
+# Convert to a data frame with proper column names
+robot_info <- as.data.frame(robot_info[-1, ], stringsAsFactors = FALSE)
+colnames(robot_info) <- robot_info[1, ]
+robot_info <- robot_info[-1, ]
+
+# Convert relevant columns to numeric
+numeric_cols <- c("Archer", "Bowler", "Corner", "Deviant")
+robot_info[, numeric_cols] <- lapply(robot_info[, numeric_cols], as.numeric)
+
+# Verify the adjusted data frame
+str(robot_info)
+
+# Adjust column indices based on the transposed data frame
+
+# Step 1: Normalize the Decision Matrix
+normalized_matrix <- scale(robot_info[, numeric_cols])
+
+# Step 2: Weighted Normalized Decision Matrix
+weighted_matrix <- normalized_matrix * management_priority$Weight
+
+# Step 3: Ideal and Negative-Ideal Solutions
+ideal_solution <- apply(weighted_matrix, 2, max)
+negative_ideal_solution <- apply(weighted_matrix, 2, min)
+
+# Step 4: Calculate Separation Measures
+distance_to_ideal <- sqrt(rowSums((weighted_matrix - ideal_solution)^2))
+distance_to_negative_ideal <- sqrt(rowSums((weighted_matrix - negative_ideal_solution)^2))
+
+# Step 5: Calculate Relative Closeness to the Ideal Solution
+relative_closeness <- distance_to_negative_ideal / (distance_to_ideal + distance_to_negative_ideal)
+
+# Step 6: Rank the Alternatives
+ranking <- data.frame(Prototype = rownames(robot_info), Relative_Closeness = relative_closeness)
+ranking <- ranking[order(-ranking$Relative_Closeness), ]
+
+# Display the ranking
+print(ranking)
+# Load the lpSolve package
+library(lpSolve)
+
+# Define the coefficients of the objective function
+objective_coefficients <- c(9, 6, 4)
+
+# Define the constraint matrix
+constraint_matrix <- matrix(c(
+  -1, -1, -1,  # Store Minimum Requirement (Grocery)
+  -1, -1, -1,  # Store Minimum Requirement (Clothing)
+  -1, -1, -1,  # Store Minimum Requirement (Sport Equipment)
+  -10, -7, -5,  # Technician Staff Hours Constraint
+  -1.6, -1, -0.6  # Budget Constraint (scaled for simplicity)
+), nrow = 5, byrow = TRUE)
+
+# Define the right-hand side of the constraints
+constraint_rhs <- c(-5, -5, -5, -250, -160)
+
+# Define the direction of the inequalities (1 = <=)
+constraint_dir <- c(rep("<=", 3), rep(">=", 2))
+
+# Solve the linear programming problem
+lp_solution <- lp("max", objective_coefficients, constraint_matrix, constraint_dir, constraint_rhs)
+
+# Print the optimal solution in the specified format
+cat("Optimal Solution:\n")
+cat("Robots for Grocery Store:", lp_solution$solution[1], "\n")
+cat("Robots for Clothing Store:", lp_solution$solution[2], "\n")
+cat("Robots for Sport Equipment:", lp_solution$solution[3], "\n")
+cat("Total Orders per Day:", sum(lp_solution$solution * c(9, 6, 4)), "\n")
+# Load required libraries
+library(readxl)
+library(dplyr)
+library(ggplot2)
+
+# Load data
+customer_data <- read.csv("Transactions_Customer.csv")
+
+# Explore the structure and summary of the data
+str(customer_data)
+summary(customer_data)
+
+
+# Explore relationships between variables
+# For continuous variables vs Revenue
+ggplot(customer_data, aes(x = Estimated_Age, y = Revenue)) +
+  geom_point() +
+  ggtitle("Relationship between Age and Revenue")
+
+ggplot(customer_data, aes(x = Estimated_Income, y = Revenue)) +
+  geom_point() +
+  ggtitle("Relationship between Income and Revenue")
+
+ggplot(customer_data, aes(x = Time_on_Website, y = Revenue)) +
+  geom_point() +
+  ggtitle("Relationship between Time on Website and Revenue")
+
+# For categorical variables vs Revenue
+ggplot(customer_data, aes(x = Advertisement_Channel, y = Revenue)) +
+  geom_boxplot() +
+  ggtitle("Revenue by Advertisement Channel")
+
+ggplot(customer_data, aes(x = Seen_Voucher, y = Revenue)) +
+  geom_boxplot() +
+  ggtitle("Revenue by Seen Voucher")
+
+# Fit a linear regression model to predict Revenue
+model <- lm(Revenue ~ Estimated_Age + Estimated_Income + Time_on_Website + Advertisement_Channel + Seen_Voucher, data = customer_data)
+
+# Check the summary of the model
+summary(model)
+# Explore relationships between variables
+# For continuous variables vs Revenue
+ggplot(customer_data, aes(x = Estimated_Age, y = Revenue)) +
+  geom_point() +
+  ggtitle("Relationship between Age and Revenue")
+
+ggplot(customer_data, aes(x = Estimated_Income, y = Revenue)) +
+  geom_point() +
+  ggtitle("Relationship between Income and Revenue")
+
+ggplot(customer_data, aes(x = Time_On_Site, y = Revenue)) +
+  geom_point() +
+  ggtitle("Relationship between Time on Website and Revenue")
+
+# For categorical variables vs Revenue
+ggplot(customer_data, aes(x = Advertisement_Channel, y = Revenue)) +
+  geom_boxplot() +
+  ggtitle("Revenue by Advertisement Channel")
+
+ggplot(customer_data, aes(x = Seen_Voucher, y = Revenue)) +
+  geom_boxplot() +
+  ggtitle("Revenue by Seen Voucher")
+
+# Fit a linear regression model to predict Revenue
+model <- lm(Revenue ~ Estimated_Age + Estimated_Income + Time_On_Site + Advertisement_Channel + Seen_Voucher, data = customer_data)
+
+# Check the summary of the model
+summary(model)
+# Load necessary libraries
+library(ggplot2)
+library(corrplot)
+
+# Average revenue by seen voucher
+ggplot(customer_data, aes(x = factor(Seen_Voucher), y = Revenue, fill = factor(Seen_Voucher))) +
+  geom_bar(stat = "summary", fun = "mean") +
+  ggtitle("Average Revenue by Seen Voucher")
+
+# Average revenue by advertisement channel
+ggplot(customer_data, aes(x = factor(Advertisement_Channel), y = Revenue, fill = factor(Advertisement_Channel))) +
+  geom_bar(stat = "summary", fun = "mean") +
+  ggtitle("Average Revenue by Advertisement Channel")
+
+# Scatter plot of revenue vs estimated income
+ggplot(customer_data, aes(x = Estimated_Income, y = Revenue)) +
+  geom_point() +
+  ggtitle("Scatter Plot of Revenue vs Estimated Income")
+
+# Scatter plot of revenue vs time on site
+ggplot(customer_data, aes(x = Time_on_Website, y = Revenue)) +
+  geom_point() +
+  ggtitle("Scatter Plot of Revenue vs Time on Website")
+
+# Scatter plot of revenue vs estimated age
+ggplot(customer_data, aes(x = Estimated_Age, y = Revenue)) +
+  geom_point() +
+  ggtitle("Scatter Plot of Revenue vs Estimated Age")
+
+# Correlation matrix visualization of relevant variables
+correlation_matrix <- cor(customer_data[, c("Estimated_Age", "Estimated_Income", "Time_On_Site ", "Advertisement_Channel", "Seen_Voucher", "Revenue  ")])
+corrplot(correlation_matrix, method = "color", type = "upper", tl.col = "black", tl.srt = 45)
+
+
+
+
+
+
+
+# Scatter plot of revenue vs time on site
+ggplot(customer_data, aes(x = Time_On_Site, y = Revenue)) +
+  geom_point() +
+  ggtitle("Scatter Plot of Revenue vs Time on Website")
+
+# Fix column names for correlation matrix
+correlation_matrix <- cor(customer_data[, c("Estimated_Age", "Estimated_Income", "Time_On_Site", "Advertisement_Channel", "Seen_Voucher", "Revenue")])
+corrplot(correlation_matrix, method = "color", type = "upper", tl.col = "black", tl.srt = 45)
+
+
+# Load the necessary libraries
+library(tidyverse)
+
+# Load the data
+customer_data <- read.csv("Transactions_Customer.csv")
+
+# View the structure of the data
+str(customer_data)
+
+# Check for missing values
+summary(is.na(customer_data))
+
+# Summary statistics
+summary(customer_data)
+
+# Explore unique values in categorical variables
+table(customer_data$Advertisement_Channel)
+table(customer_data$Seen_Voucher)
+
+# Ensure that Advertisement_Channel and Seen_Voucher are treated as factors
+customer_data$Advertisement_Channel <- as.factor(customer_data$Advertisement_Channel)
+customer_data$Seen_Voucher <- as.factor(customer_data$Seen_Voucher)
+
+# Explore the first few rows of the data
+head(customer_data)
+# Fit a linear regression model to predict Revenue
+model <- lm(Revenue ~ Estimated_Age + Estimated_Income + Time_On_Site + Advertisement_Channel + Seen_Voucher, data = customer_data)
+
+# Check the summary of the model
+summary(model)
