@@ -1,4 +1,4 @@
-# Optimized Robot Selection and Allocation: A Data-Driven Approach
+# Data-Driven Optimization for Robot Selection and Logistics Allocation
 
 ## Project Overview
 This project focuses on the selection and allocation of autonomous robot prototypes to optimize last-mile logistics. Using **TOPSIS (Technique for Order of Preference by Similarity to Ideal Solution)** for robot selection and **Linear Programming (LP)** for allocation, we ensure an effective and cost-efficient distribution strategy. 
